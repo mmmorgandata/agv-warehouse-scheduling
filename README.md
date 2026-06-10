@@ -2,6 +2,8 @@
 
 A two-stage optimization framework for automated cargo retrieval in a smart warehouse, combining multi-objective task assignment with obstacle-aware path planning.
 
+[![Live Dashboard](https://img.shields.io/badge/Live%20Dashboard-View%20→-58a6ff?style=for-the-badge&logo=github)](https://mmmorgandata.github.io/agv-warehouse-scheduling/)
+
 ---
 
 ## Problem Background
@@ -114,7 +116,9 @@ Task pickup locations are drawn from the real polygon coordinates of warehouse b
 
 ## Interactive Dashboard
 
-Open `results/dashboard.html` in any browser (no server needed):
+**[→ Open live dashboard](https://mmmorgandata.github.io/agv-warehouse-scheduling/)**
+
+Or open `results/dashboard.html` locally in any browser (no server needed):
 
 - **Animated warehouse map** — AGVs move in real time, pulse when servicing a shelf, hover for tooltips
 - **Gantt chart** — color-coded Travel / Service / Return blocks per agent with a live time cursor
