@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Smart Warehouse AGV Scheduling Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#0d1117;--card:#161b22;--border:#30363d;
+  --accent:#58a6ff;--green:#3fb950;--orange:#f78166;--purple:#bc8cff;--yellow:#e3b341;
+  --text:#e6edf3;--muted:#8b949e;
+  --font:'Segoe UI',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh}
+
+/* ── Header ── */
+header{
+  padding:28px 40px 20px;
+  border-bottom:1px solid var(--border);
+  background:linear-gradient(135deg,#0d1117 60%,#111827);
+  display:flex;align-items:center;gap:16px;
+}
+.logo{font-size:2rem}
+.header-text h1{font-size:1.4rem;font-weight:700;letter-spacing:.3px}
+.header-text p{color:var(--muted);font-size:.85rem;margin-top:3px}
+.badge{
+  margin-left:auto;padding:4px 12px;border-radius:20px;font-size:.75rem;font-weight:600;
+  background:#1c2b3a;color:var(--accent);border:1px solid var(--accent);
+}
+
+/* ── Layout ── */
+main{padding:28px 32px;display:grid;gap:22px}
+.row{display:grid;gap:16px}
+.cols-4{grid-template-columns:repeat(4,1fr)}
+.cols-2{grid-template-columns:1fr 1fr}
+.cols-3{grid-template-columns:2fr 1fr}
+
+/* ── Cards ── */
+.card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:12px;padding:20px;
+  transition:border-color .2s;
+}
+.card:hover{border-color:#58a6ff55}
+.card h2{font-size:.8rem;font-weight:600;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.8px;margin-bottom:12px;}
+
+/* ── KPI cards ── */
+.kpi-card{text-align:center;position:relative;overflow:hidden}
+.kpi-card::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(circle at 50% 0%,var(--kpi-color,#58a6ff)18,transparent 70%);
+  opacity:.08;pointer-events:none;
+}
+.kpi-val{font-size:2rem;font-weight:800;line-height:1;color:var(--kpi-color,var(--accent))}
+.kpi-label{font-size:.78rem;color:var(--muted);margin-top:6px}
+.kpi-sub{font-size:.72rem;color:var(--muted);margin-top:3px;opacity:.7}
+
+/* ── Warehouse canvas ── */
+#warehouse-wrap{position:relative;border-radius:8px;overflow:hidden;background:#0a0f14}
+#warehouse{width:100%;display:block;cursor:crosshair}
+.canvas-overlay{
+  position:absolute;top:10px;right:10px;display:flex;gap:8px;flex-direction:column;align-items:flex-end;
+}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:.72rem;color:var(--muted)}
+.legend-dot{width:10px;height:10px;border-radius:50%}
+
+/* ── Controls ── */
+.controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.btn{
+  padding:6px 16px;border-radius:6px;border:1px solid var(--border);
+  background:#21262d;color:var(--text);font-size:.8rem;cursor:pointer;
+  transition:background .15s,border-color .15s;
+}
+.btn:hover{background:#30363d;border-color:var(--accent)}
+.btn.active{background:#1c2b3a;border-color:var(--accent);color:var(--accent)}
+.speed-wrap{display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--muted);margin-left:auto}
+input[type=range]{accent-color:var(--accent)}
+
+/* ── Gantt ── */
+#gantt-wrap{overflow-x:auto;padding-bottom:4px}
+#gantt{display:block}
+
+/* ── Algo compare ── */
+.algo-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:4px}
+.algo-metric{background:#0d1117;border-radius:8px;padding:14px}
+.algo-metric h3{font-size:.72rem;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:.6px}
+.bar-group{display:flex;flex-direction:column;gap:6px}
+.bar-row{display:grid;grid-template-columns:36px 1fr 52px;align-items:center;gap:8px;font-size:.75rem}
+.bar-bg{height:8px;border-radius:4px;background:#21262d;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;transition:width 1s ease}
+.bar-val{text-align:right;font-weight:600}
+
+/* ── AGV stats ── */
+.agv-list{display:flex;flex-direction:column;gap:6px;max-height:340px;overflow-y:auto}
+.agv-row{
+  display:grid;grid-template-columns:28px 1fr auto;
+  align-items:center;gap:10px;
+  padding:8px 10px;border-radius:6px;background:#0d1117;
+  border:1px solid transparent;cursor:pointer;
+  transition:border-color .15s;font-size:.78rem;
+}
+.agv-row:hover,.agv-row.selected{border-color:var(--agv-color,var(--accent))}
+.agv-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.agv-tasks{color:var(--muted)}
+.agv-chip{
+  padding:2px 8px;border-radius:10px;font-size:.68rem;font-weight:600;
+  background:#1c2b3a;color:var(--accent);
+}
+
+/* ── Tooltip ── */
+#tooltip{
+  position:fixed;pointer-events:none;display:none;
+  background:#1c2432;border:1px solid var(--border);border-radius:8px;
+  padding:10px 14px;font-size:.77rem;color:var(--text);z-index:999;
+  box-shadow:0 8px 24px rgba(0,0,0,.4);max-width:200px;
+}
+#tooltip .tt-title{font-weight:700;margin-bottom:5px;color:var(--accent)}
+#tooltip .tt-row{display:flex;justify-content:space-between;gap:12px;margin-top:3px}
+#tooltip .tt-key{color:var(--muted)}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:#0d1117}
+::-webkit-scrollbar-thumb{background:#30363d;border-radius:3px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🤖</div>
+  <div class="header-text">
+    <h1>Smart Warehouse AGV Scheduling Dashboard</h1>
+    <p>Two-stage: CBBA task assignment + JPS path planning · Liuzhou Huayue Logistics Park</p>
+  </div>
+  <span class="badge">14 AGVs · 30 Tasks · 3 000 × 3 000 m</span>
+</header>
+
+<main>
+
+<!-- KPI row -->
+<div class="row cols-4">
+  <div class="card kpi-card" style="--kpi-color:#58a6ff">
+    <div class="kpi-val" id="k-dist">—</div>
+    <div class="kpi-label">Total Travel Distance</div>
+    <div class="kpi-sub">f₁ objective (minimise)</div>
+  </div>
+  <div class="card kpi-card" style="--kpi-color:#3fb950">
+    <div class="kpi-val" id="k-time">—</div>
+    <div class="kpi-label">Total Mission Time</div>
+    <div class="kpi-sub">f₂ objective (minimise)</div>
+  </div>
+  <div class="card kpi-card" style="--kpi-color:#f78166">
+    <div class="kpi-val" id="k-reward">—</div>
+    <div class="kpi-label">Total Reward</div>
+    <div class="kpi-sub">f₃ objective (maximise)</div>
+  </div>
+  <div class="card kpi-card" style="--kpi-color:#e3b341">
+    <div class="kpi-val" id="k-tasks">—</div>
+    <div class="kpi-label">Tasks Assigned</div>
+    <div class="kpi-sub">8 of 14 AGVs active</div>
+  </div>
+</div>
+
+<!-- Warehouse + Gantt -->
+<div class="row cols-3">
+  <div class="card">
+    <h2>Warehouse — Live Simulation</h2>
+    <div id="warehouse-wrap">
+      <canvas id="warehouse" height="480"></canvas>
+      <div class="canvas-overlay" id="legend-wrap"></div>
+    </div>
+    <div class="controls">
+      <button class="btn active" id="btn-play">⏸ Pause</button>
+      <button class="btn" id="btn-reset">↺ Reset</button>
+      <label style="font-size:.78rem;color:var(--muted);display:flex;align-items:center;gap:6px">
+        <input type="checkbox" id="chk-paths" checked> Show paths
+      </label>
+      <label style="font-size:.78rem;color:var(--muted);display:flex;align-items:center;gap:6px">
+        <input type="checkbox" id="chk-tasks" checked> Show tasks
+      </label>
+      <div class="speed-wrap">
+        <span>Speed</span>
+        <input type="range" id="speed" min="1" max="20" value="5" style="width:80px">
+        <span id="speed-label">5×</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="display:flex;flex-direction:column">
+    <h2>AGV Fleet</h2>
+    <div class="agv-list" id="agv-list"></div>
+  </div>
+</div>
+
+<!-- Gantt -->
+<div class="card">
+  <h2>Schedule — Agent Timeline (Gantt)</h2>
+  <div id="gantt-wrap">
+    <canvas id="gantt" height="260"></canvas>
+  </div>
+</div>
+
+<!-- Algo compare + Chart -->
+<div class="row cols-2">
+  <div class="card">
+    <h2>Algorithm Comparison — A* vs JPS</h2>
+    <div class="algo-grid">
+      <div class="algo-metric">
+        <h3>Memory Usage</h3>
+        <div class="bar-group">
+          <div class="bar-row">
+            <span>A*</span>
+            <div class="bar-bg"><div class="bar-fill" style="background:#f78166;width:100%" data-pct="100"></div></div>
+            <span class="bar-val" style="color:#f78166">13.24 GB</span>
+          </div>
+          <div class="bar-row">
+            <span>JPS</span>
+            <div class="bar-bg"><div class="bar-fill" style="background:#3fb950;width:0%" data-pct="48.5" data-target="48.5"></div></div>
+            <span class="bar-val" style="color:#3fb950">6.42 GB</span>
+          </div>
+        </div>
+      </div>
+      <div class="algo-metric">
+        <h3>Runtime (single task)</h3>
+        <div class="bar-group">
+          <div class="bar-row">
+            <span>A*</span>
+            <div class="bar-bg"><div class="bar-fill" style="background:#f78166;width:100%" data-pct="100"></div></div>
+            <span class="bar-val" style="color:#f78166">6 532 s</span>
+          </div>
+          <div class="bar-row">
+            <span>JPS</span>
+            <div class="bar-bg"><div class="bar-fill" style="background:#3fb950;width:0%" data-pct="22.3" data-target="22.3"></div></div>
+            <span class="bar-val" style="color:#3fb950">1 458 s</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:16px;padding:12px;background:#0a0f14;border-radius:8px;font-size:.78rem;color:var(--muted);line-height:1.6">
+      JPS achieves <strong style="color:#3fb950">4.5× faster</strong> runtime and uses
+      <strong style="color:#3fb950">51% less memory</strong> than A* for this warehouse layout,
+      by pruning symmetric paths using forced-neighbour and jump-point rules.
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Task Value Distribution</h2>
+    <canvas id="pie-chart" height="200"></canvas>
+    <div style="margin-top:12px;display:flex;gap:20px;justify-content:center;font-size:.77rem">
+      <span><span style="color:#58a6ff">■</span> Type 1: Heavy (100 pts · 55 s)</span>
+      <span><span style="color:#bc8cff">■</span> Type 2: Light (80 pts · 30 s)</span>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<div id="tooltip"></div>
+
+<script>
+// ── Embedded data (generated by Python simulation) ─────────────────────
+const DATA = {"agents": [{"id": 0, "x": 1687.7232, "y": 421.3545, "type": 0}, {"id": 1, "x": 1680.9895, "y": 420.3847, "type": 1}, {"id": 2, "x": 1675.6728, "y": 433.9099, "type": 0}, {"id": 3, "x": 1667.1988, "y": 428.0037, "type": 1}, {"id": 4, "x": 1672.0009, "y": 426.5497, "type": 0}, {"id": 5, "x": 1673.2705, "y": 419.4965, "type": 1}, {"id": 6, "x": 1679.2786, "y": 415.2095, "type": 0}, {"id": 7, "x": 1676.9219, "y": 428.2042, "type": 1}, {"id": 8, "x": 1677.7387, "y": 424.3619, "type": 0}, {"id": 9, "x": 1685.1939, "y": 426.4928, "type": 1}, {"id": 10, "x": 1685.7958, "y": 418.5085, "type": 0}, {"id": 11, "x": 1676.4226, "y": 432.7616, "type": 1}, {"id": 12, "x": 1681.7617, "y": 427.0753, "type": 0}, {"id": 13, "x": 1671.2994, "y": 418.0636, "type": 1}], "tasks": [{"id": 0, "x": 1295.0, "y": 1231.0, "type": 0, "value": 100.0, "duration": 55.0, "dest_x": 1677.0, "dest_y": 425.0}, {"id": 1, "x": 1252.0, "y": 1713.0, "type": 1, "value": 80.0, "duration": 30.0, "dest_x": 1677.0, "dest_y": 425.0}, {"id": 2, "x": 1675.0, "y": 1015.0, "type": 0, "value": 100.0, "duration": 55.0, "dest_x": 1677.0, "dest_y": 425.0}, {"id": 3, "x": 2166.0, "y": 1015.0, "type": 1, "value": 80.0, "duration": 30.0, "dest_x": 1677.0, "dest_y": 425.0}, {"id": 4, "x": 2705.0, "y": 968.0, "type": 0, "value": 100.0, "duration": 55.0, "dest_x": 1677.0, "dest_y": 425.0}, {"id": 5, "x": 515.0, "y": 992.0, "type": 1, "value": 80.0, "duration": 30.0, "dest_x": 1677.0, "dest_y": 425.0}, {"id": 6, "x": 1252.0, "y": 1294.0, "type": 0, "value": 100.0, "duration": 55.0, "dest_x": 1677.0, "dest_y": 425.0}, {"id": 7, "x": 1457.0, "y": 325.0, "type": 1, "value": 80.0, "duration": 30.0, "dest_x": 1677.0, "dest_y": 425.0}, {"id": 8, "x": 2978.0, "y": 1810.0, "type": 0, "value": 100.0, "duration": 55.0, "dest_x": 1677.0, "dest_y": 425.0}, {"id": 9, "x": 2005.0, "y": 874.0, "type": 1, "value": 80.0, "duration": 30.0, "dest_x": 1677.0, "dest_y": 425.0}, {"id": 10, "x": 1191.0, "y": 1760.0, "type": 0, "value": 100.0, "duration": 55.0, "dest_x": 1677.0, "dest_y": 425.0}, {"id": 11, "x": 1191.0, "y": 1713.0, "type": 1, "value": 80.0, "duration": 30.0, "dest_x": 1677.0, "dest_y": 425.0}, {"id": 12, "x": 455.0, "y": 1509.0, "type": 0, "value": 100.0, "duration": 55.0, "dest_x": 1677.0, "dest_y": 425.0}, {"id": 13, "x": 2759.0, "y": 968.0, "type": 1, "value": 80.0, "duration": 30.0, "dest_x": 1677.0, "dest_y": 425.0}, {"id": 14, "x": 2493.0, "y": 968.0, "type": 0, "value": 100.0, "duration": 55.0, "dest_x": 1677.0, "dest_y": 425.0}, {"id": 15, "x": 2930.0, "y": 215.0, "type": 1, "value": 80.0, "duration": 30.0, "dest_x": 1677.0, "dest_y": 425.0}, {"id": 16, "x": 1252.0, "y": 1713.0, "type": 0, "value": 100.0, "duration": 55.0, "dest_x": 1677.0, "dest_y": 425.0}, {"id": 17, "x": 2930.0, "y": 1070.0, "type": 1, "value": 80.0, "duration": 30.0, "dest_x": 1677.0, "dest_y": 425.0}, {"id": 18, "x": 1457.0, "y": 325.0, "type": 0, "value": 100.0, "duration": 55.0, "dest_x": 1677.0, "dest_y": 425.0}, {"id": 19, "x": 1896.0, "y": 874.0, "type": 1, "value": 80.0, "duration": 30.0, "dest_x": 1677.0, "dest_y": 425.0}, {"id": 20, "x": 2705.0, "y": 1015.0, "type": 0, "value": 100.0, "duration": 55.0, "dest_x": 1677.0, "dest_y": 425.0}, {"id": 21, "x": 2384.0, "y": 827.0, "type": 1, "value": 80.0, "duration": 30.0, "dest_x": 1677.0, "dest_y": 425.0}, {"id": 22, "x": 1675.0, "y": 968.0, "type": 0, "value": 100.0, "duration": 55.0, "dest_x": 1677.0, "dest_y": 425.0}, {"id": 23, "x": 117.0, "y": 2561.0, "type": 1, "value": 80.0, "duration": 30.0, "dest_x": 1677.0, "dest_y": 425.0}, {"id": 24, "x": 2384.0, "y": 1509.0, "type": 0, "value": 100.0, "duration": 55.0, "dest_x": 1677.0, "dest_y": 425.0}, {"id": 25, "x": 2005.0, "y": 874.0, "type": 1, "value": 80.0, "duration": 30.0, "dest_x": 1677.0, "dest_y": 425.0}, {"id": 26, "x": 1293.0, "y": 262.0, "type": 0, "value": 100.0, "duration": 55.0, "dest_x": 1677.0, "dest_y": 425.0}, {"id": 27, "x": 1675.0, "y": 968.0, "type": 1, "value": 80.0, "duration": 30.0, "dest_x": 1677.0, "dest_y": 425.0}, {"id": 28, "x": 2221.0, "y": 1556.0, "type": 0, "value": 100.0, "duration": 55.0, "dest_x": 1677.0, "dest_y": 425.0}, {"id": 29, "x": 2759.0, "y": 968.0, "type": 1, "value": 80.0, "duration": 30.0, "dest_x": 1677.0, "dest_y": 425.0}], "assignment": {"0": [], "1": [], "2": [25, 9, 27, 19], "3": [17, 15, 29], "4": [], "5": [23, 11, 1, 12], "6": [5, 7, 26, 18], "7": [8, 24, 28], "8": [10, 16, 6, 0], "9": [], "10": [4, 14, 2, 22], "11": [], "12": [13, 21, 3, 20], "13": []}, "timelines": {"2": [{"task_id": 25, "type": "travel", "start": 0.0, "end": 373.95}, {"task_id": 25, "type": "service", "start": 373.95, "end": 403.95}, {"task_id": 25, "type": "return", "start": 403.95, "end": 666.15}, {"task_id": 9, "type": "travel", "start": 666.15, "end": 666.15}, {"task_id": 9, "type": "service", "start": 666.15, "end": 696.15}, {"task_id": 9, "type": "return", "start": 696.15, "end": 958.35}, {"task_id": 27, "type": "travel", "start": 958.35, "end": 1549.2}, {"task_id": 27, "type": "service", "start": 1549.2, "end": 1579.2}, {"task_id": 27, "type": "return", "start": 1579.2, "end": 2168.2}, {"task_id": 19, "type": "travel", "start": 2168.2, "end": 2387.0}, {"task_id": 19, "type": "service", "start": 2387.0, "end": 2417.0}, {"task_id": 19, "type": "return", "start": 2417.0, "end": 2869.6}], "3": [{"task_id": 17, "type": "travel", "start": 0.0, "end": 1424.5}, {"task_id": 17, "type": "service", "start": 1424.5, "end": 1454.5}, {"task_id": 17, "type": "return", "start": 1454.5, "end": 2679.5}, {"task_id": 15, "type": "travel", "start": 2679.5, "end": 3534.5}, {"task_id": 15, "type": "service", "start": 3534.5, "end": 3564.5}, {"task_id": 15, "type": "return", "start": 3564.5, "end": 5144.2}, {"task_id": 29, "type": "travel", "start": 5144.2, "end": 5144.2}, {"task_id": 29, "type": "service", "start": 5144.2, "end": 5174.2}, {"task_id": 29, "type": "return", "start": 5174.2, "end": 6258.5}], "5": [{"task_id": 23, "type": "travel", "start": 0.0, "end": 2654.2}, {"task_id": 23, "type": "service", "start": 2654.2, "end": 2684.2}, {"task_id": 23, "type": "return", "start": 2684.2, "end": 4979.6}, {"task_id": 11, "type": "travel", "start": 4979.6, "end": 5814.5}, {"task_id": 11, "type": "service", "start": 5814.5, "end": 5844.5}, {"task_id": 11, "type": "return", "start": 5844.5, "end": 7316.9}, {"task_id": 1, "type": "travel", "start": 7316.9, "end": 7316.9}, {"task_id": 1, "type": "service", "start": 7316.9, "end": 7346.9}, {"task_id": 1, "type": "return", "start": 7346.9, "end": 8789.4}, {"task_id": 12, "type": "travel", "start": 8789.4, "end": 10031.8}, {"task_id": 12, "type": "service", "start": 10031.8, "end": 10086.8}, {"task_id": 12, "type": "return", "start": 10086.8, "end": 11517.8}], "6": [{"task_id": 5, "type": "travel", "start": 0.0, "end": 1286.6}, {"task_id": 5, "type": "service", "start": 1286.6, "end": 1316.6}, {"task_id": 5, "type": "return", "start": 1316.6, "end": 2608.9}, {"task_id": 7, "type": "travel", "start": 2608.9, "end": 2842.4}, {"task_id": 7, "type": "service", "start": 2842.4, "end": 2872.4}, {"task_id": 7, "type": "return", "start": 2872.4, "end": 3136.2}, {"task_id": 26, "type": "travel", "start": 3136.2, "end": 3627.0}, {"task_id": 26, "type": "service", "start": 3627.0, "end": 3682.0}, {"task_id": 26, "type": "return", "start": 3682.0, "end": 4113.2}, {"task_id": 18, "type": "travel", "start": 4113.2, "end": 4346.8}, {"task_id": 18, "type": "service", "start": 4346.8, "end": 4401.8}, {"task_id": 18, "type": "return", "start": 4401.8, "end": 4665.5}], "7": [{"task_id": 8, "type": "travel", "start": 0.0, "end": 1476.6}, {"task_id": 8, "type": "service", "start": 1476.6, "end": 1531.6}, {"task_id": 8, "type": "return", "start": 1531.6, "end": 2834.1}, {"task_id": 24, "type": "travel", "start": 2834.1, "end": 3542.7}, {"task_id": 24, "type": "service", "start": 3542.7, "end": 3597.7}, {"task_id": 24, "type": "return", "start": 3597.7, "end": 4410.7}, {"task_id": 28, "type": "travel", "start": 4410.7, "end": 4411.0}, {"task_id": 28, "type": "service", "start": 4411.0, "end": 4466.0}, {"task_id": 28, "type": "return", "start": 4466.0, "end": 5266.9}], "8": [{"task_id": 10, "type": "travel", "start": 0.0, "end": 1396.1}, {"task_id": 10, "type": "service", "start": 1396.1, "end": 1451.1}, {"task_id": 10, "type": "return", "start": 1451.1, "end": 2847.3}, {"task_id": 16, "type": "travel", "start": 2847.3, "end": 2847.3}, {"task_id": 16, "type": "service", "start": 2847.3, "end": 2902.3}, {"task_id": 16, "type": "return", "start": 2902.3, "end": 4361.1}, {"task_id": 6, "type": "travel", "start": 4361.1, "end": 4780.1}, {"task_id": 6, "type": "service", "start": 4780.1, "end": 4835.1}, {"task_id": 6, "type": "return", "start": 4835.1, "end": 5260.5}, {"task_id": 0, "type": "travel", "start": 5260.5, "end": 5260.5}, {"task_id": 0, "type": "service", "start": 5260.5, "end": 5315.5}, {"task_id": 0, "type": "return", "start": 5315.5, "end": 5778.9}], "10": [{"task_id": 4, "type": "travel", "start": 0.0, "end": 1113.8}, {"task_id": 4, "type": "service", "start": 1113.8, "end": 1168.8}, {"task_id": 4, "type": "return", "start": 1168.8, "end": 2196.8}, {"task_id": 14, "type": "travel", "start": 2196.8, "end": 2408.8}, {"task_id": 14, "type": "service", "start": 2408.8, "end": 2463.8}, {"task_id": 14, "type": "return", "start": 2463.8, "end": 3279.8}, {"task_id": 2, "type": "travel", "start": 3279.8, "end": 3869.8}, {"task_id": 2, "type": "service", "start": 3869.8, "end": 3924.8}, {"task_id": 2, "type": "return", "start": 3924.8, "end": 4514.8}, {"task_id": 22, "type": "travel", "start": 4514.8, "end": 4514.8}, {"task_id": 22, "type": "service", "start": 4514.8, "end": 4569.8}, {"task_id": 22, "type": "return", "start": 4569.8, "end": 5159.8}], "12": [{"task_id": 13, "type": "travel", "start": 0.0, "end": 1127.7}, {"task_id": 13, "type": "service", "start": 1127.7, "end": 1157.7}, {"task_id": 13, "type": "return", "start": 1157.7, "end": 2206.7}, {"task_id": 21, "type": "travel", "start": 2206.7, "end": 2506.7}, {"task_id": 21, "type": "service", "start": 2506.7, "end": 2536.7}, {"task_id": 21, "type": "return", "start": 2536.7, "end": 3392.9}, {"task_id": 3, "type": "travel", "start": 3392.9, "end": 3587.9}, {"task_id": 3, "type": "service", "start": 3587.9, "end": 3617.9}, {"task_id": 3, "type": "return", "start": 3617.9, "end": 4108.2}, {"task_id": 20, "type": "travel", "start": 4108.2, "end": 4108.2}, {"task_id": 20, "type": "service", "start": 4108.2, "end": 4163.2}, {"task_id": 20, "type": "return", "start": 4163.2, "end": 5191.2}]}, "facilities": {"德邦、中通库房": [[25.0, 2561.3], [117.0, 2561.3], [1293.2, 2561.3], [1293.2, 2184.0], [1293.2, 2244.3], [1191.6, 2244.3], [1191.6, 2184.0], [397.7, 2184.0], [397.7, 2214.1], [217.0, 2214.1], [217.0, 2244.3], [37.0, 2724.0], [172.2, 3264.3], [1747.2, 3264.3], [1837.2, 3204.3], [1837.2, 2244.3]], "云仓E": [[2077.0, 3210.3], [2077.0, 2244.3], [2217.0, 2244.3], [2217.0, 2184.0], [4297.3, 2184.0], [4297.3, 2307.3], [4367.3, 2307.3]], "顺丰库房": [[667.0, 1924.3], [757.0, 1984.3], [1837.2, 1984.3], [1837.2, 1649.3], [1899.2, 1649.3], [1899.2, 968.0], [1837.2, 968.0], [1837.2, 1015.0], [757.0, 1015.0], [757.0, 968.0], [667.0, 968.0], [455.0, 968.0], [455.0, 1556.3], [667.0, 1556.3]], "安能、中通厂房D": [[1457.2, 1556.3], [2971.0, 1556.3], [2971.0, 968.0], [1457.2, 968.0]], "中通库房": [[455.0, 874.3], [455.0, 215.0], [1293.2, 215.0], [1293.2, 874.3]], "顺丰、中通厂房C": [[1416.2, 874.3], [2971.0, 874.3], [2971.0, 215.0], [1416.2, 215.0]]}, "kpis": {"f1": 63138.7, "f2": 64413.7, "f3": 2700.0, "tasks_assigned": 30, "active_agvs": 8}};
+
+// ── Palette ────────────────────────────────────────────────────────────
+const AGENT_COLORS = [
+  '#58a6ff','#3fb950','#f78166','#e3b341','#bc8cff',
+  '#79c0ff','#56d364','#ffa657','#ff7b72','#d2a8ff',
+  '#a5f3fc','#86efac','#fde68a','#f9a8d4','#c4b5fd'
+];
+const WORLD = 3000;
+const DOCK = {x: 1677, y: 425};
+const ACTIVE_AGENTS = Object.keys(DATA.timelines).map(Number);
+
+// ── Animate KPIs ──────────────────────────────────────────────────────
+function animateCount(el, target, decimals=0, suffix=''){
+  let start=0, dur=1400, step=16;
+  let t0=null;
+  function tick(ts){
+    if(!t0) t0=ts;
+    let prog=Math.min((ts-t0)/dur,1);
+    let val=start+(target-start)*prog;
+    el.textContent = (decimals?val.toFixed(decimals):Math.round(val).toLocaleString())+suffix;
+    if(prog<1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+animateCount(document.getElementById('k-dist'), 63138, 0, ' m');
+animateCount(document.getElementById('k-time'), 64414, 0, ' s');
+animateCount(document.getElementById('k-reward'), 2700, 0, ' pts');
+animateCount(document.getElementById('k-tasks'), 30, 0, ' / 30');
+
+// ── Animate comparison bars ────────────────────────────────────────────
+setTimeout(()=>{
+  document.querySelectorAll('.bar-fill[data-target]').forEach(el=>{
+    el.style.width = el.dataset.target + '%';
+  });
+}, 800);
+
+// ── Pie chart ─────────────────────────────────────────────────────────
+new Chart(document.getElementById('pie-chart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Type 1 (Heavy, 100 pts)', 'Type 2 (Light, 80 pts)'],
+    datasets:[{
+      data:[15, 15],
+      backgroundColor:['#58a6ff','#bc8cff'],
+      borderColor:'#161b22',
+      borderWidth:3,
+      hoverOffset:8
+    }]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:true,
+    plugins:{
+      legend:{display:false},
+      tooltip:{
+        callbacks:{
+          label: ctx => ` ${ctx.label}: ${ctx.raw} tasks`
+        }
+      }
+    }
+  }
+});
+
+// ── AGV fleet list ────────────────────────────────────────────────────
+const agvList = document.getElementById('agv-list');
+let selectedAgv = null;
+ACTIVE_AGENTS.forEach(id=>{
+  const tasks = DATA.assignment[String(id)];
+  const color = AGENT_COLORS[id % AGENT_COLORS.length];
+  const row = document.createElement('div');
+  row.className = 'agv-row';
+  row.style.setProperty('--agv-color', color);
+  row.innerHTML = `
+    <div class="agv-dot" style="background:${color}"></div>
+    <div>
+      <div style="font-weight:600">AGV ${id}</div>
+      <div class="agv-tasks" style="margin-top:2px">Tasks: T${tasks.join(', T')}</div>
+    </div>
+    <span class="agv-chip">${tasks.length} tasks</span>
+  `;
+  row.addEventListener('click',()=>{
+    selectedAgv = selectedAgv===id ? null : id;
+    document.querySelectorAll('.agv-row').forEach(r=>r.classList.remove('selected'));
+    if(selectedAgv!==null) row.classList.add('selected');
+  });
+  agvList.appendChild(row);
+});
+
+// ── Canvas legend ─────────────────────────────────────────────────────
+const legendWrap = document.getElementById('legend-wrap');
+ACTIVE_AGENTS.forEach(id=>{
+  const color = AGENT_COLORS[id % AGENT_COLORS.length];
+  legendWrap.innerHTML += `<div class="legend-item">
+    <div class="legend-dot" style="background:${color}"></div>AGV ${id}
+  </div>`;
+});
+
+// ── Warehouse simulation ───────────────────────────────────────────────
+const canvas = document.getElementById('warehouse');
+const ctx = canvas.getContext('2d');
+const showPaths = document.getElementById('chk-paths');
+const showTasks = document.getElementById('chk-tasks');
+
+// Resize canvas to fill container
+function resizeCanvas(){
+  const wrap = document.getElementById('warehouse-wrap');
+  canvas.width = wrap.clientWidth;
+  canvas.height = 480;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+function wx(x){ return x / WORLD * canvas.width; }
+function wy(y){ return (1 - y / WORLD) * canvas.height; }
+
+// Build AGV animation state from timelines
+const SIM_TOTAL = Math.max(...Object.values(DATA.timelines).map(ev=>ev[ev.length-1].end));
+let simTime = 0;
+let playing = true;
+let speedMult = 5;
+let lastTs = null;
+
+// Pre-build straight-line paths per agent (shelf → dock routing simplified)
+// Each agent goes: start → task1.shelf → DOCK → task2.shelf → DOCK → ... → home
+function buildAgentPath(agId){
+  const agent = DATA.agents[agId];
+  const tasks = DATA.assignment[String(agId)];
+  const pts = [[agent.x, agent.y]];
+  tasks.forEach(tid=>{
+    const t = DATA.tasks[tid];
+    pts.push([t.x, t.y]);
+    pts.push([DOCK.x, DOCK.y]);
+  });
+  return pts;
+}
+
+const agentPaths = {};
+ACTIVE_AGENTS.forEach(id=>{ agentPaths[id] = buildAgentPath(id); });
+
+function getAgvPos(agId){
+  const tl = DATA.timelines[String(agId)];
+  if(!tl || tl.length===0) return {x: DOCK.x, y: DOCK.y, phase:'idle'};
+
+  // Find current event
+  let ev = tl.find(e=>simTime >= e.start && simTime < e.end);
+  if(!ev) ev = tl[tl.length-1];
+
+  const tid = ev.task_id;
+  const task = DATA.tasks[tid];
+  const prog = ev.end === ev.start ? 1 : (simTime - ev.start)/(ev.end - ev.start);
+
+  if(ev.type==='travel'){
+    // from previous position to shelf
+    const prevIdx = tl.indexOf(ev);
+    let fromX = DOCK.x, fromY = DOCK.y;
+    if(prevIdx>0){
+      const prev = tl[prevIdx-1];
+      const pt = DATA.tasks[prev.task_id];
+      fromX = DOCK.x; fromY = DOCK.y; // after return, at dock
+    }
+    return {
+      x: fromX + (task.x-fromX)*prog,
+      y: fromY + (task.y-fromY)*prog,
+      phase: 'travel', taskId: tid
+    };
+  } else if(ev.type==='service'){
+    return {x: task.x, y: task.y, phase: 'service', taskId: tid};
+  } else {
+    return {
+      x: task.x + (DOCK.x-task.x)*prog,
+      y: task.y + (DOCK.y-task.y)*prog,
+      phase: 'return', taskId: tid
+    };
+  }
+}
+
+function drawWarehouse(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  // Background grid
+  ctx.strokeStyle='#1a222e';
+  ctx.lineWidth=0.5;
+  for(let i=0;i<=10;i++){
+    ctx.beginPath();
+    ctx.moveTo(i*canvas.width/10,0); ctx.lineTo(i*canvas.width/10,canvas.height);
+    ctx.moveTo(0,i*canvas.height/10); ctx.lineTo(canvas.width,i*canvas.height/10);
+    ctx.stroke();
+  }
+
+  // Buildings
+  const BLD_COLORS = {
+    '德邦、中通库房': '#1c3a2e',
+    '云仓E': '#1a2b3c',
+    '顺丰库房': '#2a1f35',
+    '安能、中通厂房D': '#2a2510',
+    '中通库房': '#1c3a2e',
+    '顺丰、中通厂房C': '#2a2510',
+  };
+  const BLD_STROKE = {
+    '德邦、中通库房': '#2d6a4f',
+    '云仓E': '#1d4ed8',
+    '顺丰库房': '#6d28d9',
+    '安能、中通厂房D': '#92400e',
+    '中通库房': '#2d6a4f',
+    '顺丰、中通厂房C': '#92400e',
+  };
+
+  Object.entries(DATA.facilities).forEach(([name, pts])=>{
+    if(pts.length<3) return;
+    ctx.beginPath();
+    pts.forEach(([x,y],i)=>{
+      if(i===0) ctx.moveTo(wx(x),wy(y));
+      else ctx.lineTo(wx(x),wy(y));
+    });
+    ctx.closePath();
+    ctx.fillStyle=BLD_COLORS[name]||'#1e2535';
+    ctx.fill();
+    ctx.strokeStyle=BLD_STROKE[name]||'#30363d';
+    ctx.lineWidth=1.5;
+    ctx.stroke();
+
+    // Label
+    const cx=pts.reduce((s,[x])=>s+x,0)/pts.length;
+    const cy=pts.reduce((s,[,y])=>s+y,0)/pts.length;
+    ctx.fillStyle='rgba(200,200,220,0.45)';
+    ctx.font=`${Math.max(9,canvas.width/60)}px sans-serif`;
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.fillText(name.slice(0,6), wx(cx), wy(cy));
+  });
+
+  // Charging station (dock)
+  ctx.save();
+  ctx.shadowBlur=14; ctx.shadowColor='#e3b341';
+  ctx.fillStyle='#e3b341';
+  ctx.beginPath();
+  const sx=wx(DOCK.x), sy=wy(DOCK.y), r=8;
+  ctx.moveTo(sx,sy-r);
+  for(let i=0;i<5;i++){
+    ctx.lineTo(sx+r*Math.cos((Math.PI/2-i*4*Math.PI/5)),sy-r*Math.sin((Math.PI/2-i*4*Math.PI/5)));
+    ctx.lineTo(sx+r/2*Math.cos((Math.PI/2-(i+.5)*4*Math.PI/5)),sy-r/2*Math.sin((Math.PI/2-(i+.5)*4*Math.PI/5)));
+  }
+  ctx.closePath(); ctx.fill(); ctx.restore();
+
+  // Tasks
+  if(showTasks.checked){
+    DATA.tasks.forEach(t=>{
+      const assigned = Object.entries(DATA.assignment).find(([,tids])=>tids.includes(t.id));
+      const color = assigned ? AGENT_COLORS[Number(assigned[0]) % AGENT_COLORS.length] : '#555';
+      const done = ACTIVE_AGENTS.some(agId=>{
+        const tl=DATA.timelines[String(agId)]||[];
+        const last=tl.filter(e=>e.task_id===t.id).pop();
+        return last && simTime>last.end;
+      });
+      ctx.save();
+      ctx.strokeStyle = done ? '#3fb95099' : color;
+      ctx.fillStyle   = done ? '#3fb95022' : color+'33';
+      ctx.lineWidth=1.5;
+      const tx=wx(t.x), ty=wy(t.y), s=6;
+      ctx.beginPath();
+      ctx.moveTo(tx-s,ty-s); ctx.lineTo(tx+s,ty-s);
+      ctx.lineTo(tx+s,ty+s); ctx.lineTo(tx-s,ty+s);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=color;
+      ctx.font=`${Math.max(8,canvas.width/80)}px sans-serif`;
+      ctx.textAlign='center';
+      ctx.textBaseline='top';
+      ctx.fillText('T'+t.id, tx, ty+s+2);
+      ctx.restore();
+    });
+  }
+
+  // Agent paths (straight lines for clarity)
+  if(showPaths.checked){
+    ACTIVE_AGENTS.forEach(id=>{
+      if(selectedAgv!==null && selectedAgv!==id) return;
+      const color = AGENT_COLORS[id % AGENT_COLORS.length];
+      const pts = agentPaths[id];
+      ctx.save();
+      ctx.strokeStyle=color+'50';
+      ctx.lineWidth=1;
+      ctx.setLineDash([4,4]);
+      ctx.beginPath();
+      pts.forEach(([x,y],i)=>{
+        if(i===0) ctx.moveTo(wx(x),wy(y));
+        else ctx.lineTo(wx(x),wy(y));
+      });
+      ctx.stroke();
+      ctx.restore();
+    });
+  }
+
+  // AGV sprites
+  ACTIVE_AGENTS.forEach(id=>{
+    if(selectedAgv!==null && selectedAgv!==id) return;
+    const pos = getAgvPos(id);
+    const color = AGENT_COLORS[id % AGENT_COLORS.length];
+    const x=wx(pos.x), y=wy(pos.y);
+    const r = pos.phase==='service' ? 10 : 7;
+
+    ctx.save();
+    ctx.shadowBlur = pos.phase==='service' ? 18 : 10;
+    ctx.shadowColor = color;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(x,y,r,0,Math.PI*2);
+    ctx.fill();
+
+    // Pulsing ring when servicing
+    if(pos.phase==='service'){
+      ctx.strokeStyle=color+'88';
+      ctx.lineWidth=2;
+      const pulse = (Math.sin(Date.now()/300)+1)*5;
+      ctx.beginPath();
+      ctx.arc(x,y,r+4+pulse,0,Math.PI*2);
+      ctx.stroke();
+    }
+
+    // AGV label
+    ctx.fillStyle='#fff';
+    ctx.font=`bold ${Math.max(7,canvas.width/90)}px sans-serif`;
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.fillText(id, x, y);
+    ctx.restore();
+  });
+
+  // Time progress bar
+  ctx.fillStyle='#21262d';
+  ctx.fillRect(0, canvas.height-6, canvas.width, 6);
+  ctx.fillStyle='#58a6ff';
+  ctx.fillRect(0, canvas.height-6, canvas.width*(simTime/SIM_TOTAL), 6);
+}
+
+function simLoop(ts){
+  if(lastTs===null) lastTs=ts;
+  const dt=(ts-lastTs)/1000;
+  lastTs=ts;
+  if(playing){
+    simTime=Math.min(simTime+dt*speedMult*100, SIM_TOTAL);
+    if(simTime>=SIM_TOTAL){ simTime=SIM_TOTAL; playing=false; document.getElementById('btn-play').textContent='▶ Play'; }
+  }
+  drawWarehouse();
+  requestAnimationFrame(simLoop);
+}
+requestAnimationFrame(simLoop);
+
+document.getElementById('btn-play').addEventListener('click',function(){
+  playing=!playing;
+  this.textContent=playing?'⏸ Pause':'▶ Play';
+  this.classList.toggle('active',playing);
+  lastTs=null;
+});
+document.getElementById('btn-reset').addEventListener('click',()=>{
+  simTime=0; playing=true; lastTs=null;
+  document.getElementById('btn-play').textContent='⏸ Pause';
+  document.getElementById('btn-play').classList.add('active');
+});
+const speedSlider=document.getElementById('speed');
+speedSlider.addEventListener('input',function(){
+  speedMult=Number(this.value);
+  document.getElementById('speed-label').textContent=this.value+'×';
+});
+
+// ── Gantt Chart (SVG) ─────────────────────────────────────────────────
+function drawGantt(){
+  const wrap = document.getElementById('gantt-wrap');
+  const W = Math.max(wrap.clientWidth-20, 600);
+  const H = 260;
+  const ganttCanvas = document.getElementById('gantt');
+  ganttCanvas.width = W; ganttCanvas.height = H;
+  const gc = ganttCanvas.getContext('2d');
+
+  const agents = ACTIVE_AGENTS;
+  const rowH = 26, rowPad = 6;
+  const labelW = 52, padTop = 30, padBot = 20;
+
+  const maxT = Math.max(...agents.map(id=>{
+    const tl=DATA.timelines[String(id)];
+    return tl[tl.length-1].end;
+  }));
+
+  function tx(t){ return labelW + (t/maxT)*(W-labelW-10); }
+
+  // Background
+  gc.fillStyle='#0d1117';
+  gc.fillRect(0,0,W,H);
+
+  // Grid lines + time axis
+  gc.strokeStyle='#1e2535';
+  gc.lineWidth=1;
+  const ticks=8;
+  gc.fillStyle='#8b949e';
+  gc.font='10px sans-serif';
+  gc.textAlign='center';
+  for(let i=0;i<=ticks;i++){
+    const x=labelW+(W-labelW-10)*(i/ticks);
+    gc.beginPath(); gc.moveTo(x,padTop); gc.lineTo(x,H-padBot); gc.stroke();
+    const t=Math.round(maxT*i/ticks);
+    gc.fillText(t+'s', x, H-6);
+  }
+
+  // Rows
+  const PHASE_COLORS={travel:'#1c3a5c',service:'#163d29',return:'#3a2c1c'};
+  const PHASE_STROKE={travel:'#58a6ff',service:'#3fb950',return:'#f78166'};
+
+  agents.forEach((id,row)=>{
+    const y=padTop+row*(rowH+rowPad);
+    const tl=DATA.timelines[String(id)];
+    const color=AGENT_COLORS[id%AGENT_COLORS.length];
+
+    // Row label
+    gc.fillStyle=color;
+    gc.font='bold 11px sans-serif';
+    gc.textAlign='right';
+    gc.fillText('AGV '+id, labelW-4, y+rowH/2+4);
+
+    // Segments
+    tl.forEach(ev=>{
+      const x1=tx(ev.start), x2=tx(ev.end);
+      const bw=Math.max(x2-x1,1);
+      const bgColor=PHASE_COLORS[ev.type]||'#1e2535';
+      const borderColor=ev.type==='travel'?color:PHASE_STROKE[ev.type];
+
+      gc.fillStyle=bgColor;
+      gc.beginPath();
+      gc.roundRect(x1,y+2,bw,rowH-4,3);
+      gc.fill();
+      gc.strokeStyle=borderColor+'aa';
+      gc.lineWidth=1;
+      gc.stroke();
+
+      // Task label inside bar if wide enough
+      if(bw>18){
+        gc.fillStyle='rgba(255,255,255,0.7)';
+        gc.font='9px sans-serif';
+        gc.textAlign='center';
+        const label=ev.type==='travel'?'→T'+ev.task_id:ev.type==='service'?'T'+ev.task_id:'←';
+        gc.fillText(label, x1+bw/2, y+rowH/2+3);
+      }
+    });
+  });
+
+  // Current time cursor
+  const cx=tx(simTime);
+  gc.strokeStyle='rgba(255,255,255,0.6)';
+  gc.lineWidth=1.5;
+  gc.setLineDash([4,3]);
+  gc.beginPath();
+  gc.moveTo(cx,padTop-8); gc.lineTo(cx,H-padBot);
+  gc.stroke();
+  gc.setLineDash([]);
+
+  // Legend
+  const legendItems=[['travel','#58a6ff','→ Travel'],['service','#3fb950','⚙ Service'],['return','#f78166','← Return']];
+  let lx=labelW+5;
+  legendItems.forEach(([,c,label])=>{
+    gc.fillStyle=c;
+    gc.fillRect(lx,6,10,10);
+    gc.fillStyle='#8b949e';
+    gc.font='10px sans-serif';
+    gc.textAlign='left';
+    gc.fillText(label,lx+14,15);
+    lx+=80;
+  });
+
+  gc.fillStyle='#8b949e';
+  gc.font='10px sans-serif';
+  gc.textAlign='left';
+  gc.fillText('Time (s)', W-50, 15);
+}
+
+// redraw Gantt each animation frame (so cursor follows sim time)
+setInterval(drawGantt, 50);
+
+// ── Tooltip on warehouse canvas ───────────────────────────────────────
+const tooltip=document.getElementById('tooltip');
+canvas.addEventListener('mousemove',e=>{
+  const rect=canvas.getBoundingClientRect();
+  const mx=e.clientX-rect.left, my=e.clientY-rect.top;
+
+  // Check if near an AGV
+  let hit=null;
+  ACTIVE_AGENTS.forEach(id=>{
+    const pos=getAgvPos(id);
+    const px=wx(pos.x), py=wy(pos.y);
+    if(Math.hypot(mx-px,my-py)<14) hit={type:'agv',id,pos};
+  });
+  // Check if near a task
+  if(!hit){
+    DATA.tasks.forEach(t=>{
+      const px=wx(t.x), py=wy(t.y);
+      if(Math.hypot(mx-px,my-py)<12) hit={type:'task',t};
+    });
+  }
+
+  if(hit){
+    let html='';
+    if(hit.type==='agv'){
+      const tasks=DATA.assignment[String(hit.id)];
+      html=`<div class="tt-title">AGV ${hit.id}</div>
+        <div class="tt-row"><span class="tt-key">Phase</span><span>${hit.pos.phase}</span></div>
+        <div class="tt-row"><span class="tt-key">Tasks</span><span>${tasks.length}</span></div>
+        <div class="tt-row"><span class="tt-key">Assigned</span><span>T${tasks.join(', T')}</span></div>`;
+    } else {
+      const t=hit.t;
+      html=`<div class="tt-title">Task T${t.id}</div>
+        <div class="tt-row"><span class="tt-key">Type</span><span>Type ${t.type+1}</span></div>
+        <div class="tt-row"><span class="tt-key">Value</span><span>${t.value} pts</span></div>
+        <div class="tt-row"><span class="tt-key">Duration</span><span>${t.duration} s</span></div>
+        <div class="tt-row"><span class="tt-key">Location</span><span>(${Math.round(t.x)}, ${Math.round(t.y)})</span></div>`;
+    }
+    tooltip.innerHTML=html;
+    tooltip.style.display='block';
+    tooltip.style.left=(e.clientX+16)+'px';
+    tooltip.style.top=(e.clientY-20)+'px';
+  } else {
+    tooltip.style.display='none';
+  }
+});
+canvas.addEventListener('mouseleave',()=>{ tooltip.style.display='none'; });
+</script>
+</body>
+</html>

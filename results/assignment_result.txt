@@ -1,0 +1,49 @@
+=== AGV Task Assignment (CBBA) ===
+f1 total distance : 63138.7 m
+f2 total time     : 64413.7 s
+f3 total reward   : 2700.0
+
+AGV 0: tasks []
+AGV 1: tasks []
+AGV 2: tasks [25, 9, 27, 19]
+  Task 25: type=1 shelf=(2005,874) value=80.0 dur=30.0s
+  Task 9: type=1 shelf=(2005,874) value=80.0 dur=30.0s
+  Task 27: type=1 shelf=(1675,968) value=80.0 dur=30.0s
+  Task 19: type=1 shelf=(1896,874) value=80.0 dur=30.0s
+AGV 3: tasks [17, 15, 29]
+  Task 17: type=1 shelf=(2930,1070) value=80.0 dur=30.0s
+  Task 15: type=1 shelf=(2930,215) value=80.0 dur=30.0s
+  Task 29: type=1 shelf=(2759,968) value=80.0 dur=30.0s
+AGV 4: tasks []
+AGV 5: tasks [23, 11, 1, 12]
+  Task 23: type=1 shelf=(117,2561) value=80.0 dur=30.0s
+  Task 11: type=1 shelf=(1191,1713) value=80.0 dur=30.0s
+  Task 1: type=1 shelf=(1252,1713) value=80.0 dur=30.0s
+  Task 12: type=0 shelf=(455,1509) value=100.0 dur=55.0s
+AGV 6: tasks [5, 7, 26, 18]
+  Task 5: type=1 shelf=(515,992) value=80.0 dur=30.0s
+  Task 7: type=1 shelf=(1457,325) value=80.0 dur=30.0s
+  Task 26: type=0 shelf=(1293,262) value=100.0 dur=55.0s
+  Task 18: type=0 shelf=(1457,325) value=100.0 dur=55.0s
+AGV 7: tasks [8, 24, 28]
+  Task 8: type=0 shelf=(2978,1810) value=100.0 dur=55.0s
+  Task 24: type=0 shelf=(2384,1509) value=100.0 dur=55.0s
+  Task 28: type=0 shelf=(2221,1556) value=100.0 dur=55.0s
+AGV 8: tasks [10, 16, 6, 0]
+  Task 10: type=0 shelf=(1191,1760) value=100.0 dur=55.0s
+  Task 16: type=0 shelf=(1252,1713) value=100.0 dur=55.0s
+  Task 6: type=0 shelf=(1252,1294) value=100.0 dur=55.0s
+  Task 0: type=0 shelf=(1295,1231) value=100.0 dur=55.0s
+AGV 9: tasks []
+AGV 10: tasks [4, 14, 2, 22]
+  Task 4: type=0 shelf=(2705,968) value=100.0 dur=55.0s
+  Task 14: type=0 shelf=(2493,968) value=100.0 dur=55.0s
+  Task 2: type=0 shelf=(1675,1015) value=100.0 dur=55.0s
+  Task 22: type=0 shelf=(1675,968) value=100.0 dur=55.0s
+AGV 11: tasks []
+AGV 12: tasks [13, 21, 3, 20]
+  Task 13: type=1 shelf=(2759,968) value=80.0 dur=30.0s
+  Task 21: type=1 shelf=(2384,827) value=80.0 dur=30.0s
+  Task 3: type=1 shelf=(2166,1015) value=80.0 dur=30.0s
+  Task 20: type=0 shelf=(2705,1015) value=100.0 dur=55.0s
+AGV 13: tasks []

@@ -1,0 +1,93 @@
+=== AGV Paths (JPS) ===
+
+AGV 0:
+  HOME → shelf: 2 waypoints, length=1.0
+
+AGV 1:
+  HOME → shelf: 2 waypoints, length=1.0
+
+AGV 2:
+  T25 → shelf: 3 waypoints, length=58.3
+  T25 → dock : 3 waypoints, length=58.7
+  T9 → shelf: 3 waypoints, length=58.7
+  T9 → dock : 3 waypoints, length=58.7
+  T27 → shelf: 2 waypoints, length=54.0
+  T27 → dock : 2 waypoints, length=54.0
+  T19 → shelf: 3 waypoints, length=54.1
+  T19 → dock : 3 waypoints, length=54.1
+  HOME → shelf: 1 waypoints, length=0.0
+
+AGV 3:
+  T17 → shelf: 3 waypoints, length=151.3
+  T17 → dock : 4 waypoints, length=151.9
+  T15 → shelf: 3 waypoints, length=133.7
+  T15 → dock : 3 waypoints, length=133.7
+  T29 → shelf: 3 waypoints, length=130.4
+  T29 → dock : 4 waypoints, length=130.4
+  HOME → shelf: 1 waypoints, length=0.0
+
+AGV 4:
+  HOME → shelf: 2 waypoints, length=1.0
+
+AGV 5:
+  T23 → shelf: 0 waypoints, length=0.0
+  T11 → shelf: 0 waypoints, length=0.0
+  T1 → shelf: 0 waypoints, length=0.0
+  T12 → shelf: 0 waypoints, length=0.0
+  HOME → shelf: 1 waypoints, length=0.0
+
+AGV 6:
+  T5 → shelf: 0 waypoints, length=0.0
+  T7 → shelf: 3 waypoints, length=26.1
+  T7 → dock : 3 waypoints, length=26.1
+  T26 → shelf: 3 waypoints, length=44.6
+  T26 → dock : 5 waypoints, length=44.6
+  T18 → shelf: 3 waypoints, length=26.1
+  T18 → dock : 3 waypoints, length=26.1
+  HOME → shelf: 1 waypoints, length=0.0
+
+AGV 7:
+  T8 → shelf: 0 waypoints, length=0.0
+  T24 → shelf: 3 waypoints, length=137.4
+  T24 → dock : 4 waypoints, length=137.4
+  T28 → shelf: 3 waypoints, length=135.8
+  T28 → dock : 3 waypoints, length=135.8
+  HOME → shelf: 1 waypoints, length=0.0
+
+AGV 8:
+  T10 → shelf: 0 waypoints, length=0.0
+  T16 → shelf: 0 waypoints, length=0.0
+  T6 → shelf: 0 waypoints, length=0.0
+  T0 → shelf: 0 waypoints, length=0.0
+  HOME → shelf: 1 waypoints, length=0.0
+
+AGV 9:
+  HOME → shelf: 2 waypoints, length=1.4
+
+AGV 10:
+  T4 → shelf: 3 waypoints, length=124.4
+  T4 → dock : 4 waypoints, length=125.4
+  T14 → shelf: 3 waypoints, length=104.4
+  T14 → dock : 4 waypoints, length=104.4
+  T2 → shelf: 2 waypoints, length=59.0
+  T2 → dock : 2 waypoints, length=59.0
+  T22 → shelf: 2 waypoints, length=54.0
+  T22 → dock : 2 waypoints, length=54.0
+  HOME → shelf: 1 waypoints, length=0.0
+
+AGV 11:
+  HOME → shelf: 2 waypoints, length=1.0
+
+AGV 12:
+  T13 → shelf: 3 waypoints, length=129.4
+  T13 → dock : 4 waypoints, length=130.4
+  T21 → shelf: 3 waypoints, length=87.6
+  T21 → dock : 3 waypoints, length=87.6
+  T3 → shelf: 3 waypoints, length=79.3
+  T3 → dock : 4 waypoints, length=79.3
+  T20 → shelf: 3 waypoints, length=127.4
+  T20 → dock : 4 waypoints, length=127.4
+  HOME → shelf: 1 waypoints, length=0.0
+
+AGV 13:
+  HOME → shelf: 2 waypoints, length=1.4
