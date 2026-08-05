@@ -1,23 +1,23 @@
-# Smart Warehouse AGV Planning Prototype
+# Smart Warehouse AGV Scheduling
 
-This repository explores a two-stage planning workflow for warehouse retrieval:
+This repository contains a two-stage AGV scheduling and evaluation pipeline for warehouse retrieval:
 
 1. assign tasks with either a greedy nearest-task baseline or a centralized CBBA-style auction;
 2. plan static-obstacle-aware routes with A* or Jump Point Search (JPS).
 
-The project models 14 AGVs and 30 pickup-and-delivery tasks. It is a planning simulation, not a production fleet controller: routes are planned independently, so the code does not yet resolve AGV-to-AGV conflicts in space and time.
+The reproducible benchmark models 14 AGVs and 30 pickup-and-delivery tasks. Across the four tested configurations, **greedy nearest-task assignment with A*** achieves the shortest makespan and the lowest planning time.
 
 [Open the interactive dashboard](https://mmmorgandata.github.io/agv-warehouse-scheduling/)
 
-## What the implementation covers
+## What I built
 
-- per-agent task-count limits;
-- reward-and-distance bidding in a shared winner table;
+- a two-stage pipeline connecting task assignment, grid routing, evaluation, and visualization;
+- greedy nearest-task and centralized CBBA-style assignment with per-agent task limits;
 - eight-directional A* and JPS routing around static obstacles;
-- route distance, makespan, fleet utilization, and planning-runtime metrics;
-- a deterministic public benchmark that does not depend on private survey files.
+- a deterministic public scenario that can run without the private survey spreadsheets;
+- end-to-end metrics for task completion, route distance, makespan, active fleet size, and planning time.
 
-The CBBA-style implementation is centralized. It borrows bundle bidding and winner resolution from CBBA, but it does not simulate peer-to-peer messages, fault tolerance, or a decentralized network. Battery usage and task windows are represented in the data model but are not enforced by the public benchmark.
+CBBA, A*, and JPS are established algorithms rather than algorithms introduced by this project. The implementation adapts them into one comparable planning workflow. Its CBBA-style assignment uses bundle bidding and a shared winner table in a centralized simulation; it does not model peer-to-peer communication. Battery usage and task windows are represented in the data model but are not enforced by the public benchmark.
 
 ## Reproducible comparison
 
@@ -47,9 +47,15 @@ The public scenario uses seed 42, a 120×120 occupancy grid representing a 3,000
 | CBBA-style | A* | 30/30 | 9 | 95,714 m | 17,286 s | ≈0.16 s |
 | CBBA-style | JPS | 30/30 | 9 | 95,714 m | 17,286 s | ≈0.22 s |
 
-\*One local run on Apple Silicon with Python 3.12; runtime should be remeasured on the target environment.
+\*The timing column comes from one Apple Silicon / Python 3.12 run. Route and makespan results are deterministic for this seed; wall-clock time will vary by machine.
 
-The comparison does not show a universal winner. Both planners return the same route length for a given assignment, as expected under the shared movement model. At this grid size, this Python JPS implementation is slower than A*. The CBBA-style assignment activates one fewer AGV but has a 6.8% longer makespan than the greedy baseline. These results are useful boundaries, not claims of production improvement.
+For this scenario, **greedy nearest-task assignment with A*** is the strongest default: it completes all 30 tasks with the shortest makespan and the lowest planning time. CBBA-style assignment becomes interesting only when reducing the active fleet matters more than finishing early—it uses one fewer AGV, but increases makespan by 6.8%. JPS produces the same routes as A* and is slightly slower at this scale, so A* remains the practical choice unless larger or more open maps reveal a clearer pruning advantage.
+
+## What the benchmark revealed
+
+The current CBBA-style bid is based on distance from an AGV's starting position, so it can underestimate the cost of inserting another task into an existing route. A route-aware marginal bid would address the weakness exposed by the benchmark.
+
+Collision avoidance is a separate problem. The current planners find spatial paths independently; a deployable multi-AGV system would also need to coordinate when each vehicle enters a shared aisle.
 
 ## Original scenario and private data
 
@@ -85,14 +91,6 @@ python -m pip install matplotlib numpy openpyxl
 python benchmark.py
 python -m unittest discover -s tests -v
 ```
-
-## Limitations and next steps
-
-- add a time-expanded reservation table or conflict-based search for AGV-to-AGV collision avoidance;
-- enforce battery, payload, and task-window feasibility during assignment;
-- replace the shared winner table with explicit peer-to-peer consensus if distributed behavior is required;
-- benchmark multiple seeds, grid sizes, obstacle densities, and task loads;
-- compare route-aware marginal bids instead of scoring each task only from the agent's initial position.
 
 ## References
 
