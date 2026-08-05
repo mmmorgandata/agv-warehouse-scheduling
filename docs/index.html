@@ -133,7 +133,7 @@ input[type=range]{accent-color:var(--accent)}
   <div class="logo">🤖</div>
   <div class="header-text">
     <h1>Smart Warehouse AGV Scheduling Dashboard</h1>
-    <p>Two-stage: CBBA task assignment + JPS path planning · Liuzhou Huayue Logistics Park</p>
+    <p>Historical survey-based scenario · centralized CBBA-style assignment + JPS routing</p>
   </div>
   <span class="badge">14 AGVs · 30 Tasks · 3 000 × 3 000 m</span>
 </header>
@@ -167,7 +167,7 @@ input[type=range]{accent-color:var(--accent)}
 <!-- Warehouse + Gantt -->
 <div class="row cols-3">
   <div class="card">
-    <h2>Warehouse — Live Simulation</h2>
+    <h2>Warehouse — Planned Route Playback</h2>
     <div id="warehouse-wrap">
       <canvas id="warehouse" height="480"></canvas>
       <div class="canvas-overlay" id="legend-wrap"></div>
@@ -206,7 +206,7 @@ input[type=range]{accent-color:var(--accent)}
 <!-- Algo compare + Chart -->
 <div class="row cols-2">
   <div class="card">
-    <h2>Algorithm Comparison — A* vs JPS</h2>
+    <h2>Historical Algorithm Figures</h2>
     <div class="algo-grid">
       <div class="algo-metric">
         <h3>Memory Usage</h3>
@@ -240,9 +240,9 @@ input[type=range]{accent-color:var(--accent)}
       </div>
     </div>
     <div style="margin-top:16px;padding:12px;background:#0a0f14;border-radius:8px;font-size:.78rem;color:var(--muted);line-height:1.6">
-      JPS achieves <strong style="color:#3fb950">4.5× faster</strong> runtime and uses
-      <strong style="color:#3fb950">51% less memory</strong> than A* for this warehouse layout,
-      by pruning symmetric paths using forced-neighbour and jump-point rules.
+      These figures were retained from the original study and are not regenerated
+      by the public repository. Run <code>python benchmark.py</code> for the reproducible
+      A*/JPS and greedy/CBBA-style comparison.
     </div>
   </div>
 

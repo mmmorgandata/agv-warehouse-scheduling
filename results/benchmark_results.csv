@@ -1,0 +1,5 @@
+assignment,planner,tasks_assigned,active_agvs,route_distance_m,makespan_s,planning_runtime_ms,routes_planned
+Greedy nearest,A*,30,10,95655.6,16183.8,162.3,60
+Greedy nearest,JPS,30,10,95655.6,16183.8,221.4,60
+CBBA-style,A*,30,9,95714.1,17286.2,160.2,60
+CBBA-style,JPS,30,9,95714.1,17286.2,222.6,60

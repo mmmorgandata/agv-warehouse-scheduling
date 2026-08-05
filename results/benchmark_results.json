@@ -1,0 +1,42 @@
+[
+  {
+    "assignment": "Greedy nearest",
+    "planner": "A*",
+    "tasks_assigned": 30,
+    "active_agvs": 10,
+    "route_distance_m": 95655.6,
+    "makespan_s": 16183.8,
+    "planning_runtime_ms": 162.3,
+    "routes_planned": 60
+  },
+  {
+    "assignment": "Greedy nearest",
+    "planner": "JPS",
+    "tasks_assigned": 30,
+    "active_agvs": 10,
+    "route_distance_m": 95655.6,
+    "makespan_s": 16183.8,
+    "planning_runtime_ms": 221.4,
+    "routes_planned": 60
+  },
+  {
+    "assignment": "CBBA-style",
+    "planner": "A*",
+    "tasks_assigned": 30,
+    "active_agvs": 9,
+    "route_distance_m": 95714.1,
+    "makespan_s": 17286.2,
+    "planning_runtime_ms": 160.2,
+    "routes_planned": 60
+  },
+  {
+    "assignment": "CBBA-style",
+    "planner": "JPS",
+    "tasks_assigned": 30,
+    "active_agvs": 9,
+    "route_distance_m": 95714.1,
+    "makespan_s": 17286.2,
+    "planning_runtime_ms": 222.6,
+    "routes_planned": 60
+  }
+]

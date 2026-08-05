@@ -1,7 +1,7 @@
 """
 Smart-Warehouse AGV Two-Stage Scheduling Simulation
 ====================================================
-Stage 1 – Multi-objective task assignment via improved CBBA
+Stage 1 – Task assignment via a centralized CBBA-style simulation
 Stage 2 – Obstacle-aware path planning via JPS
 
 Usage:
@@ -12,7 +12,6 @@ Outputs:
     path_result.txt         – per-AGV JPS waypoints
     task_assignment.png     – 2-D scatter of agents and tasks
     agv_paths.png           – all AGV routes on the warehouse grid
-    jps_vs_astar_bar.png    – algorithmic comparison (replicated from paper)
 """
 import argparse
 import math
@@ -240,33 +239,6 @@ def plot_agv_paths(agents, tasks, all_paths, grid, out_dir):
     print("  Saved agv_paths.png")
 
 
-def plot_algorithm_comparison(jps_time: float, out_dir):
-    """Reproduce the A* vs JPS comparison table from the paper as a bar chart."""
-    labels = ["A*", "JPS"]
-    memory_gb = [13.24, 6.42]
-    runtime_s = [6532, 1458]
-
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(9, 4))
-    fig.suptitle("A* vs JPS Algorithm Comparison (single task)", fontsize=13)
-
-    ax1.bar(labels, memory_gb, color=["#ef9a9a", "#90caf9"])
-    ax1.set_title("Memory Usage (GB)")
-    ax1.set_ylabel("GB")
-    for i, v in enumerate(memory_gb):
-        ax1.text(i, v + 0.2, f"{v}", ha="center")
-
-    ax2.bar(labels, runtime_s, color=["#ef9a9a", "#90caf9"])
-    ax2.set_title("Runtime (s)")
-    ax2.set_ylabel("Seconds")
-    for i, v in enumerate(runtime_s):
-        ax2.text(i, v + 50, f"{v}", ha="center")
-
-    fig.tight_layout()
-    fig.savefig(out_dir / "jps_vs_astar_bar.png", dpi=150)
-    plt.close(fig)
-    print("  Saved jps_vs_astar_bar.png")
-
-
 # ── Main ───────────────────────────────────────────────────────────────
 
 def main():
@@ -321,7 +293,6 @@ def main():
         print("\n── Generating plots ──────────────────────────────────────")
         plot_task_assignment(agents, tasks, summary, facilities, out_dir)
         plot_agv_paths(agents, tasks, all_paths, grid, out_dir)
-        plot_algorithm_comparison(jps_time, out_dir)
 
     print("\nDone.")
 

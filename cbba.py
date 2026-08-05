@@ -1,5 +1,5 @@
 """
-Consensus-Based Bundle Algorithm (CBBA) for multi-AGV task assignment.
+Centralized simulation of CBBA-style bidding for multi-AGV task assignment.
 
 Two-phase auction:
   Phase 1 – Task selection: each AGV greedily adds tasks to its bundle,
@@ -8,8 +8,8 @@ Two-phase auction:
 
 The outer loop repeats until bundles stop changing.
 
-Reference: Choi et al. (2009) "Consensus-Based Decentralized Auctions for
-Robust Task Allocation", IEEE TRO.
+The implementation borrows bundle construction and winner resolution from
+CBBA, but uses a shared winner table rather than peer-to-peer communication.
 """
 import copy
 import math
@@ -19,7 +19,7 @@ from models import AGV, Task, TASK_TYPES
 
 
 class CBBA:
-    """Multi-AGV multi-task assignment via CBBA.
+    """Multi-AGV task assignment using CBBA-style bundle bidding.
 
     Args:
         agents:          list of AGV objects.
@@ -51,7 +51,7 @@ class CBBA:
         self.path:   list[list[int]] = [[] for _ in range(self.n)]
         self.times:  list[list[float]] = [[] for _ in range(self.n)]
 
-        # Global winner table (shared / updated after consensus)
+        # Shared winner table used by this centralized simulation.
         # winning_agent[j]  = agent index that won task j  (-1 = unclaimed)
         # winning_bid[j]    = winning bid for task j
         self.winning_agent: list[int]   = [-1] * self.m
@@ -73,7 +73,7 @@ class CBBA:
             for i in range(self.n):
                 self._build_bundle(i)
 
-            # Phase 2: elect a global winner for every task
+            # Phase 2: elect a winner from the shared bid table
             self._consensus()
 
             # Each agent drops tasks it did not win
